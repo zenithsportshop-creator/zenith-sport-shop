@@ -105,10 +105,10 @@ footer{padding:22px 0;text-align:center;color:var(--mute);font-size:14px}
 <h3 style="font-size:26px;margin:0 0 10px">Votre panier</h3>
 <ul id="items"></ul>
 <div id="vide">Votre panier est vide. Ajoutez un article depuis les fiches ci-dessus.</div>
-<label>Nom complet<input name="nom" autocomplete="name" required></label>
-<label>Adresse de livraison<textarea name="adresse" rows="2" autocomplete="street-address" required></textarea></label>
-<label>Téléphone<input name="tel" type="tel" autocomplete="tel" required></label>
-<label>E-mail<input name="email" type="email" autocomplete="email" required></label>
+<label>Nom complet *<input name="nom" autocomplete="name" required minlength="2" pattern=".*\S.*" title="Indiquez votre nom"></label>
+<label>Adresse de livraison *<textarea name="adresse" rows="2" autocomplete="street-address" required minlength="8"></textarea></label>
+<label>Téléphone *<input name="tel" type="tel" autocomplete="tel" required pattern="[0-9 +\-]{8,20}" title="8 chiffres minimum (chiffres, espaces, + ou -)"></label>
+<label>E-mail *<input name="email" type="email" autocomplete="email" required></label>
 <button class="btn" type="submit">Envoyer la commande</button>
 <div id="err" role="alert"></div>
 <div id="ok" role="status"></div>
@@ -142,19 +142,25 @@ $("f").addEventListener("submit",function(e){
 e.preventDefault();
 if(!Object.keys(cart).length){$("err").textContent="Ajoutez au moins un article au panier.";return}
 var form=e.target,d=new FormData(form),NL="\n";
+if(d.get("botcheck"))return;
+var nom=(d.get("nom")||"").trim(),adr=(d.get("adresse")||"").trim(),tel=(d.get("tel")||"").trim(),mail=(d.get("email")||"").trim();
+if(!nom||!adr||!tel||!mail){$("err").textContent="Tous les champs sont obligatoires.";return}
+if(tel.replace(/\D/g,"").length<8){$("err").textContent="Indiquez un numéro de téléphone valide.";return}
 var l=Object.keys(cart).map(function(k){return "- "+cart[k]+" x "+k}).join(NL);
-var msg="Articles :"+NL+l+NL+NL+"Nom : "+d.get("nom")+NL+"Adresse : "+d.get("adresse")+NL+"Téléphone : "+d.get("tel")+NL+"E-mail : "+d.get("email");
+var msg="Articles :"+NL+l+NL+NL+"Nom : "+nom+NL+"Adresse : "+adr+NL+"Téléphone : "+tel+NL+"E-mail : "+mail;
 var btn=form.querySelector("button[type=submit]");
 $("err").textContent="";$("ok").textContent="";
 btn.disabled=true;btn.textContent="Envoi en cours…";
 fetch("https://api.web3forms.com/submit",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},
-body:JSON.stringify({access_key:KEY,subject:"Nouvelle commande Zenith Sport Shop",from_name:"Zenith Sport Shop",name:d.get("nom"),email:d.get("email"),phone:d.get("tel"),address:d.get("adresse"),message:msg,botcheck:d.get("botcheck")?"1":""})})
-.then(function(r){return r.json()})
+body:JSON.stringify({access_key:KEY,subject:"Nouvelle commande Zenith Sport Shop",from_name:"Zenith Sport Shop",name:nom,email:mail,phone:tel,address:adr,message:msg})})
+.then(function(r){return r.text().then(function(t){var j;try{j=JSON.parse(t)}catch(x){j={success:false,message:"réponse inattendue du serveur (code "+r.status+")"}}return j})})
 .then(function(j){
-if(!j.success)throw new Error(j.message||"echec");
+if(!j.success)throw new Error(j.message||"échec");
 cart={};form.reset();render();
 $("ok").textContent="Merci ! Votre commande est bien envoyée. Nous vous recontactons très vite."})
-.catch(function(){$("err").textContent="L’envoi a échoué. Réessayez, ou écrivez-nous à "+TO+"."})
+.catch(function(err){console.error("Web3Forms :",err);
+var m=err&&err.message==="Failed to fetch"?"connexion impossible ou bloquée":(err&&err.message)||"erreur inconnue";
+$("err").textContent="L’envoi a échoué ("+m+"). Réessayez, ou écrivez-nous à "+TO+"."})
 .then(function(){btn.disabled=false;btn.textContent="Envoyer la commande"})});
 render();
 </script>
