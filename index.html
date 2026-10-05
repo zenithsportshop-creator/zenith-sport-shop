@@ -115,7 +115,6 @@ footer{padding:22px 0;text-align:center;color:var(--mute);font-size:14px}
 <label>Nom complet *<input name="nom" autocomplete="name" required minlength="2" pattern=".*\S.*" title="Indiquez votre nom"></label>
 <label>Adresse de livraison *<textarea name="adresse" rows="2" autocomplete="street-address" required minlength="8"></textarea></label>
 <label>Téléphone *<input name="tel" type="tel" autocomplete="tel" required pattern="[0-9 +\-]{8,20}" title="8 chiffres minimum (chiffres, espaces, + ou -)"></label>
-<label>E-mail *<input name="email" type="email" autocomplete="email" required></label>
 <button class="btn" type="submit">Envoyer la commande</button>
 <div id="err" role="alert"></div>
 <div id="ok" role="status"></div>
@@ -153,17 +152,17 @@ e.preventDefault();
 if(!Object.keys(cart).length){$("err").textContent="Ajoutez au moins un article au panier.";return}
 var form=e.target,d=new FormData(form),NL="\n";
 if(d.get("botcheck"))return;
-var nom=(d.get("nom")||"").trim(),adr=(d.get("adresse")||"").trim(),tel=(d.get("tel")||"").trim(),mail=(d.get("email")||"").trim();
-if(!nom||!adr||!tel||!mail){$("err").textContent="Tous les champs sont obligatoires.";return}
+var nom=(d.get("nom")||"").trim(),adr=(d.get("adresse")||"").trim(),tel=(d.get("tel")||"").trim();
+if(!nom||!adr||!tel){$("err").textContent="Tous les champs sont obligatoires.";return}
 if(tel.replace(/\D/g,"").length<8){$("err").textContent="Indiquez un numéro de téléphone valide.";return}
 var l=Object.keys(cart).map(function(k){return "- "+cart[k]+" x "+k+" ("+fmt(PRIX[k])+") = "+fmt(cart[k]*PRIX[k])}).join(NL);
 var T=0;Object.keys(cart).forEach(function(k){T+=cart[k]*PRIX[k]});
-var msg="Articles :"+NL+l+NL+NL+"Total : "+fmt(T)+NL+NL+"Nom : "+nom+NL+"Adresse : "+adr+NL+"Téléphone : "+tel+NL+"E-mail : "+mail;
+var msg="Articles :"+NL+l+NL+NL+"Total : "+fmt(T)+NL+NL+"Nom : "+nom+NL+"Adresse : "+adr+NL+"Téléphone : "+tel;
 var btn=form.querySelector("button[type=submit]");
 $("err").textContent="";$("ok").textContent="";
 btn.disabled=true;btn.textContent="Envoi en cours…";
 fetch("https://api.web3forms.com/submit",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},
-body:JSON.stringify({access_key:KEY,subject:"Nouvelle commande Zenith Sport Shop",from_name:"Zenith Sport Shop",name:nom,email:mail,phone:tel,address:adr,message:msg})})
+body:JSON.stringify({access_key:KEY,subject:"Nouvelle commande Zenith Sport Shop",from_name:"Zenith Sport Shop",name:nom,phone:tel,address:adr,message:msg})})
 .then(function(r){return r.text().then(function(t){var j;try{j=JSON.parse(t)}catch(x){j={success:false,message:"réponse inattendue du serveur (code "+r.status+")"}}return j})})
 .then(function(j){
 if(!j.success)throw new Error(j.message||"échec");
